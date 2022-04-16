@@ -1,5 +1,9 @@
 import sys
-import cPickle as pickle
+
+try:
+   import cPickle as pickle
+except:
+   import pickle
 
 from base import *
 from heapdict import heapdict
@@ -27,28 +31,28 @@ def preprocessGreedy(trajs, distPairs):
     """
     
     strajCov, ptStraj, strajPth = {}, {}, {}
-    for key, value in distPairs.iteritems():
+    for key, value in distPairs.items():
         pth, trID = key[0], key[1]
-        for i in xrange(len(value)):
+        for i in range(len(value)):
             straj, dist = value[i][0], value[i][1]
             strajCov[straj] = straj.bounds[1] - straj.bounds[0] + 1
-            if strajPth.has_key(straj):
+            if straj in strajPth:
                 strajPth[straj].append(pth)
             else:
                 strajPth[straj] = [pth]
-            for j in xrange(straj.bounds[0], straj.bounds[1]+1):
+            for j in range(straj.bounds[0], straj.bounds[1]+1):
                 p = trajs[trID].pts[j]
-                if ptStraj.has_key(p):
+                if p in ptStraj:
                     ptStraj[p].add(straj)
                 else:
                     ptStraj[p] = set([straj])
                     
     trajCov = {}  
-    for trID, tra in trajs.iteritems():
+    for trID, tra in trajs.items():
         trajCov[trID] = len(tra.pts)
-        for i in xrange(len(tra.pts)):
+        for i in range(len(tra.pts)):
             p = tra.pts[i]
-            if ptStraj.has_key(p) is False: # this means p can't be assigned to any pathlet
+            if p not in ptStraj: # this means p can't be assigned to any pathlet
                 ptStraj[p] = set()
     
     return (strajCov, ptStraj, strajPth, trajCov)
@@ -83,7 +87,7 @@ def processPoint(p, ptStraj, strajCov, strajPth, trajs, trajCov, distPairs, numU
     for straj in ptStraj[p]:
         trID = straj.trajID
         strajCov[straj] = strajCov[straj]-1
-        for i in xrange(len(strajPth[straj])):
+        for i in range(len(strajPth[straj])):
             pth = strajPth[straj][i]
             retVal.add((pth, trID))
     ptStraj[p] = None # this is also marking that p is processed.
@@ -125,13 +129,13 @@ def processSubtraj(straj, strajCov, trajs, trajCov, ptStraj, strajPth, distPairs
     trID = straj.trajID
     tr = trajs[trID]
     retVal = set()
-    for i in xrange(straj.bounds[0], straj.bounds[1]+1):
+    for i in range(straj.bounds[0], straj.bounds[1]+1):
         p = tr.pts[i]
         # Check if point p is unprocessed.
         if ptStraj[p] is not None:
             retVal = retVal.union(processPoint(p, ptStraj, strajCov, strajPth, trajs, trajCov, distPairs, numUnprocessedPts, queue))
     if strajCov[straj] != 0:
-        print "Error!! Coverage should have been 0, instead of %d" %strajCov[straj]
+        print("Error!! Coverage should have been 0, instead of %d" %strajCov[straj])
         
     return retVal
 
@@ -165,7 +169,7 @@ def processTraj(trID, ptStraj, strajCov, strajPth, trajs, trajCov, distPairs, nu
     """
     points = trajs[trID].pts
     retVal = set()
-    for i in xrange(len(points)):
+    for i in range(len(points)):
         p = points[i]
         # Check if p is unprocessed.
         if ptStraj[p] is not None:
@@ -174,7 +178,7 @@ def processTraj(trID, ptStraj, strajCov, strajPth, trajs, trajCov, distPairs, nu
             retVal = retVal.union(processPoint(p, ptStraj, strajCov, strajPth, trajs, trajCov, distPairs, numUnprocessedPts, queue))
             
     if trajCov[trID] != 0:
-        print "Error!! Coverage should have been zero."
+        print("Error!! Coverage should have been zero.")
         
     return retVal
         
@@ -192,7 +196,7 @@ def computeCovCostRatio(trajStrajDist, c1, c3, strajCov):
             The coverage-cost ratio of the pathlet.
     """
     curCov, curCost = 0, c1
-    for k, v in trajStrajDist.iteritems():
+    for k, v in trajStrajDist.items():
         straj, dist = v[0], v[1]
         if straj is None:
             continue
@@ -220,7 +224,7 @@ def optStrajAdvancedHelper(strajDists, strajCov, r, c3):
             (subtraj, float) or (None,None).
     """
     temp, stra, dista = 0, None, None
-    for i in xrange(len(strajDists)):
+    for i in range(len(strajDists)):
         straj, dist = strajDists[i][0], strajDists[i][1]
         cov = strajCov[straj]
         if temp < cov - c3*r*dist :
@@ -323,33 +327,33 @@ def runGreedy(trajs, distPairs, strajCov, ptStraj, strajPth, trajCov, c1, c2, c3
     pthOptCovCost, pthOptStrajs = {}, {}
     
     # Build skeleton of pthOptStrajs.
-    for key, value in distPairs.iteritems():
+    for key, value in distPairs.items():
         pth, trID, strajDists = key[0], key[1], value
-        if pthOptStrajs.has_key(pth) is False:
+        if pth not in pthOptStrajs:
             pthOptStrajs[pth] = {}
         pthOptStrajs[pth][trID] = (None, None)
 
     # Compute pthOptStrajs.
-    for key, value in distPairs.iteritems():
+    for key, value in distPairs.items():
         pth = key[0]
         affectedTrajs = pthOptStrajs[pth].keys()
         computeOptStrajsAdvanced(pth, distPairs, pthOptStrajs, strajCov, c1, c3, len(ptStraj), affectedTrajs)
     
     # Compute pthOptCovCost from pthOptStrajs.
-    for key, value in pthOptStrajs.iteritems():
+    for key, value in pthOptStrajs.items():
         pth = key
         pthOptCovCost[pth] = computeCovCostRatio(value, c1, c3, strajCov)
         if pthOptCovCost[pth] == 0:
-            print "Error"
+            print("Error")
       
     # Initialize a max priority queue of pathlets ordered by coverage cost ratios.
     queue1 = heapdict()
-    for pth, ccratio in pthOptCovCost.iteritems():
+    for pth, ccratio in pthOptCovCost.items():
         queue1[pth] = -1.0*ccratio # Need to negate, since heapdict is a min-heap.
     
     # Initialize a priority queue of trajs, with coverage to cost ratio of a singleton set, i.e., |T|/c2.
     queue2 = heapdict()
-    for trID, cov in trajCov.iteritems():
+    for trID, cov in trajCov.items():
         queue2[trID] = -(1.0*cov)/(1.0*c2)
     
     # Initial pathlet assignments, it is of the form {pathlet : [subtraj]} and stores the 
@@ -367,7 +371,7 @@ def runGreedy(trajs, distPairs, strajCov, ptStraj, strajPth, trajCov, c1, c2, c3
     count = 0
     numUnprocessedPts = [len(ptStraj)]
     while numUnprocessedPts[0] > 0:
-        print "num of points is %d" %numUnprocessedPts[0]
+        #print("num of points is %d" %numUnprocessedPts[0])
         x1, x2 = queue1.peekitem(), queue2.peekitem()
 
         # Set of the form {(pth, trID)} whose coverage changes after new points are
@@ -379,11 +383,11 @@ def runGreedy(trajs, distPairs, strajCov, ptStraj, strajPth, trajCov, c1, c2, c3
             x = queue1.popitem()
             pth = x[0]
             fracThickness = 0
-            for trID, pair in pthOptStrajs[pth].iteritems():
+            for trID, pair in pthOptStrajs[pth].items():
                 straj = pair[0]
                 if straj is None : # possible when all strajs of trID in pth's kitty have zero coverage
                     continue
-                if pthAssignments.has_key(pth):
+                if pth in pthAssignments:
                     pthAssignments[pth].append(straj)
                 else:
                     pthAssignments[pth] = [straj]
@@ -421,23 +425,23 @@ def runGreedy(trajs, distPairs, strajCov, ptStraj, strajPth, trajCov, c1, c2, c3
 # test above function
 if __name__ == "__main__":
     if len(sys.argv) != 5:
-        print "Wrong command. See README for details."
+        print("Wrong command. See README for details.")
         
     else:
-        print "Loading trajectories ..."
+        print("Loading trajectories ...")
         trajs = pickle.load(open(sys.argv[1] + ".CleanedUp.p", "rb"))
         c1, c2, c3 = float(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4])
         #for trajID in trajs:
             #print "TrajID %d : %d points " %(trajID, len(trajs[trajID].pts))
         ret = pickle.load(open(sys.argv[1] + ".pre.sc.p", "rb"))
-        print "Loading prerequisite data structures ..."
+        print("Loading prerequisite data structures ...")
         distPairs = pickle.load(open(sys.argv[1] + ".distPairs2.sc.p", "rb"))
         (strajCov, ptStraj, strajPth, trajCov) = ret
         #print strajPth
         #validate(strajCov, ptStraj,  trajs)
         #testProcessSubtraj(strajCov, trajs, None, ptStraj, strajPth, distPairs)
-        print "Running greedy algorithm ..."
+        print("Running greedy algorithm ...")
         retVal = runGreedy(trajs, distPairs, strajCov, ptStraj, strajPth, trajCov, c1, c2, c3)
-        print "Finished."
+        print("Finished.")
         pickle.dump(retVal, open(sys.argv[1] +".out.sc.p", "wb"))
 

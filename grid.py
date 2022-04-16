@@ -71,11 +71,12 @@ def gridData(trajs, simpTrajs, delta):
             xCell = int(np.floor((p.lon - xMin)/delta))
             yCell = int(np.floor((p.lat - yMin)/delta))
             # Make sure cell exists.
-            if grid.has_key((xCell, yCell)) is False:
+            if (xCell, yCell) not in grid:
                 grid[(xCell, yCell)] = {}
             # Add trajID to cell if not there.
-            if grid[(xCell, yCell)].has_key(trID) is False:
+            if trID not in grid[(xCell, yCell)]:
                 grid[(xCell, yCell)][trID] = []
             grid[(xCell, yCell)][trID].append(index)
     
     return trajGrid(grid, yMin, xMin, delta, xCells, yCells)
+

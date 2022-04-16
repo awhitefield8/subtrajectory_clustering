@@ -3,7 +3,6 @@ import pickle
 import sys
 
 from base import *
-from sets import Set
 
 
 def sqDist(pt1, pt2):
@@ -77,7 +76,7 @@ def frechetDec(trajA, trajB, delta):
     """
     
     ptQueue = [(0, 0)]
-    visited = Set([])
+    visited = set([])
     while len(ptQueue) > 0:
         current = ptQueue.pop(0)
         if current in visited:
@@ -167,4 +166,4 @@ if __name__ == "__main__":
     #trajs = readTrajsFromTxtFile(sys.argv[1])
     k = list(trajs.keys())
     traj1, traj2 = trajs[k[0]], trajs[k[1]]
-    print semiContFrechetDec(traj1.pts, traj2.pts, Decimal(sys.argv[1]))
+    print(semiContFrechetDec(traj1.pts, traj2.pts, Decimal(sys.argv[1])))
